@@ -1,6 +1,15 @@
 {
-  "dist:win": "electron-builder --win --publish=never", "dist:mac": "electron-builder --mac --publish=never", "dist:all": "electron-builder --win --mac --publish=never"
-
+  "name": "the-room-desktop",
+  "version": "1.0.0",
+  "description": "Desktop app for The Room chat",
+  "main": "main.js",
+  "author": "",
+  "license": "ISC",
+  "scripts": {
+    "start": "electron .",
+    "dist:win": "electron-builder --win --publish=never",
+    "dist:mac": "electron-builder --mac --publish=never",
+    "dist:all": "electron-builder --win --mac --publish=never"
   },
   "devDependencies": {
     "electron": "^31.0.0",
