@@ -1,0 +1,2010 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>The room</title>
+<style>
+  :root {
+    --cream: #faf6ef;
+    --sage: #8ba888;
+    --sage-dark: #6d8a6b;
+    --moss: #4f6b52;
+    --peach: #ffe3cc;
+    --peach-text: #7a4a1f;
+    --lav: #e6e2f5;
+    --lav-text: #4d4470;
+    --ink: #4a453d;
+    --ink-dim: #9b9488;
+    --line: #e9e1d3;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: ui-rounded, "SF Pro Rounded", "Nunito", "Segoe UI", system-ui, sans-serif;
+    background: var(--cream);
+  }
+  button, input { transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease, opacity 0.15s ease; }
+  button:active { transform: scale(0.96); }
+  @keyframes msgIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes dotBounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+    30% { transform: translateY(-4px); opacity: 1; }
+  }
+  .app {
+    color: var(--ink);
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    background: var(--sage);
+    color: #fff;
+  }
+  .avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: #ffffff3d;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; flex-shrink: 0; white-space: nowrap;
+    overflow: hidden;
+  }
+  .topbar .titles { display: flex; flex-direction: column; line-height: 1.35; }
+  .topbar .room-name { font-size: 16px; font-weight: 700; }
+  .topbar .room-sub { font-size: 12px; color: #eef6ec; }
+  .topbar .switch {
+    margin-left: auto;
+    font-size: 12.5px;
+    color: #eef6ec;
+    cursor: pointer;
+    padding: 6px 12px;
+    border-radius: 20px;
+    background: #ffffff26;
+    white-space: nowrap;
+    border: none;
+  }
+  .topbar .switch:hover { background: #ffffff40; }
+  .log {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 0;
+    background: var(--cream);
+    scroll-behavior: smooth;
+  }
+  .log::-webkit-scrollbar { width: 8px; }
+  .log::-webkit-scrollbar-thumb { background: var(--line); border-radius: 8px; }
+  .empty {
+    margin: auto;
+    text-align: center;
+    color: var(--ink-dim);
+    font-size: 13.5px;
+    line-height: 1.9;
+  }
+  .msg { max-width: 74%; display: flex; flex-direction: column; gap: 3px; animation: msgIn 0.25s ease; }
+  .announcement {
+    align-self: center;
+    max-width: 90%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    animation: msgIn 0.25s ease;
+    margin: 4px 0;
+  }
+  .announcement .banner {
+    background: var(--lav);
+    color: var(--lav-text);
+    border-radius: 14px;
+    padding: 10px 18px;
+    font-size: 13.5px;
+    font-weight: 600;
+    text-align: center;
+    line-height: 1.5;
+    max-width: 480px;
+  }
+  .announcement .banner-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--sage-dark);
+    margin-bottom: 2px;
+  }
+  .announcement .time { font-size: 10px; color: var(--ink-dim); }
+  .admin-badge {
+    display: inline-block;
+    background: var(--sage);
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 1px 6px;
+    border-radius: 8px;
+    vertical-align: middle;
+  }
+  .msg.mine { align-self: flex-end; align-items: flex-end; }
+  .msg.theirs { align-self: flex-start; align-items: flex-start; }
+  .sender { font-size: 12px; font-weight: 700; margin: 0 4px; color: var(--sage-dark); }
+  .bubble {
+    padding: 10px 15px;
+    border-radius: 18px;
+    font-size: 14.5px;
+    line-height: 1.55;
+    word-break: break-word;
+  }
+  .msg.mine .bubble { background: var(--peach); color: var(--peach-text); border-bottom-right-radius: 4px; }
+  .msg.theirs .bubble { background: var(--lav); color: var(--lav-text); border-bottom-left-radius: 4px; }
+  .meta-row { display: flex; align-items: center; gap: 6px; }
+  .time { font-size: 10.5px; color: var(--ink-dim); margin: 0 4px; }
+  .delete-btn {
+    background: none; border: none; color: var(--ink-dim); cursor: pointer;
+    font-size: 10.5px; padding: 0; width: auto; height: auto; text-decoration: underline;
+  }
+  .delete-btn:hover { color: var(--peach-text); }
+  .bubble img.attach-img { max-width: 220px; border-radius: 12px; display: block; }
+  .bubble video.attach-video, .bubble audio.attach-audio { max-width: 220px; border-radius: 12px; display: block; }
+  .bubble audio.attach-audio { width: 220px; }
+  .bubble .file-link {
+    display: flex; align-items: center; gap: 8px;
+    padding: 4px 2px; text-decoration: none; color: inherit; font-size: 13.5px; font-weight: 600;
+  }
+  .bubble .file-link .file-icon {
+    width: 34px; height: 34px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9.5px; font-weight: 700; letter-spacing: 0.02em; flex-shrink: 0;
+  }
+  .file-icon.k-pdf { background: #f6cfc4; color: #8a3a1f; }
+  .file-icon.k-doc { background: #cfe0f6; color: #244a7a; }
+  .file-icon.k-sheet { background: #d3e8c9; color: #395c26; }
+  .file-icon.k-slide { background: #f6ddc0; color: #7a4d10; }
+  .file-icon.k-archive { background: #e2ddd1; color: #55503f; }
+  .file-icon.k-audio { background: var(--lav); color: var(--lav-text); }
+  .file-icon.k-file { background: var(--lav); color: var(--lav-text); }
+  .typing-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 16px;
+    height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: height 0.25s ease, opacity 0.2s ease, padding 0.25s ease;
+    color: var(--ink-dim);
+    font-size: 12.5px;
+  }
+  .typing-indicator.show { height: 28px; opacity: 1; padding: 6px 16px; }
+  .typing-dots { display: flex; gap: 3px; }
+  .typing-dots span {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--ink-dim);
+    animation: dotBounce 1.2s ease-in-out infinite;
+  }
+  .typing-dots span:nth-child(2) { animation-delay: 0.15s; }
+  .typing-dots span:nth-child(3) { animation-delay: 0.3s; }
+  .picker {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 6px;
+    padding: 0 16px;
+    background: #fff;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    border-top: 0px solid var(--line);
+    transition: max-height 0.25s ease, opacity 0.2s ease, padding 0.25s ease;
+  }
+  .picker.open { max-height: 160px; opacity: 1; padding: 12px 16px; border-top-width: 1px; overflow-y: auto; }
+  .picker button {
+    background: var(--cream);
+    border: none;
+    border-radius: 10px;
+    padding: 8px 4px;
+    font-size: 15px;
+    cursor: pointer;
+    font-family: inherit;
+    color: var(--ink);
+    line-height: 1.3;
+  }
+  .picker button:hover { background: var(--lav); }
+  .attach-preview {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 16px;
+    background: #fff;
+    font-size: 13px;
+    color: var(--ink);
+    height: 0;
+    overflow: hidden;
+    opacity: 0;
+    border-top: 0px solid var(--line);
+    transition: height 0.25s ease, opacity 0.2s ease, padding 0.25s ease;
+  }
+  .attach-preview.open { height: 60px; opacity: 1; padding: 10px 16px; border-top-width: 1px; }
+  .attach-preview img { width: 40px; height: 40px; object-fit: cover; border-radius: 8px; }
+  .attach-preview .file-chip {
+    width: 40px; height: 40px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; flex-shrink: 0;
+  }
+  .attach-preview .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .attach-preview .remove {
+    background: none; border: none; color: var(--ink-dim); cursor: pointer;
+    font-size: 13px; padding: 4px 8px; width: auto; height: auto; border-radius: 8px;
+  }
+  .attach-preview .remove:hover { background: var(--cream); }
+  .inputrow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    background: var(--cream);
+    border-top: 1px solid var(--line);
+  }
+  .inputrow input[type=text] {
+    flex: 1;
+    background: #fff;
+    border: 1px solid var(--line);
+    color: var(--ink);
+    padding: 12px 16px;
+    border-radius: 24px;
+    font-family: inherit;
+    font-size: 14.5px;
+    outline: none;
+  }
+  .inputrow input[type=text]:focus { border-color: var(--sage); }
+  .inputrow button {
+    background: var(--sage);
+    color: #fff;
+    border: none;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    font-family: inherit;
+    font-size: 17px;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .inputrow button:hover { background: var(--sage-dark); }
+  .attach-toggle, .picker-toggle {
+    background: #fff !important;
+    color: var(--sage-dark) !important;
+    border: 1px solid var(--line) !important;
+  }
+  .attach-toggle:hover, .picker-toggle:hover { background: var(--lav) !important; }
+
+  .gate {
+    padding: 44px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    align-items: center;
+    justify-content: center;
+    min-height: 100%;
+    text-align: center;
+    background: var(--cream);
+  }
+  .gate .avatar-lg {
+    width: 68px; height: 68px; border-radius: 50%;
+    background: var(--lav);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; margin-bottom: 6px;
+  }
+  .gate h1 { font-size: 19px; color: var(--ink); margin: 0; font-weight: 700; }
+  .gate p { color: var(--ink-dim); font-size: 13.5px; margin: 0; max-width: 290px; line-height: 1.7; }
+  .gate-field { display: flex; flex-direction: column; gap: 6px; width: 100%; max-width: 280px; text-align: left; }
+  .gate-field label { font-size: 11.5px; color: var(--ink-dim); font-weight: 600; }
+  .gate-field input {
+    background: #fff;
+    border: 1px solid var(--line);
+    color: var(--ink);
+    padding: 12px 15px;
+    border-radius: 16px;
+    font-family: inherit;
+    font-size: 14.5px;
+    outline: none;
+  }
+  .gate-field input:focus { border-color: var(--sage); }
+  .gate button.join {
+    background: var(--sage);
+    color: #fff;
+    border: none;
+    padding: 13px 28px;
+    border-radius: 24px;
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    margin-top: 6px;
+    width: 100%;
+    max-width: 280px;
+  }
+  .gate button.join:hover { background: var(--sage-dark); }
+  .gate .err { color: #c17a5a; font-size: 12.5px; }
+  .link-btn {
+    color: var(--ink-dim); font-size: 12.5px; text-decoration: underline;
+    cursor: pointer; margin-top: 4px;
+  }
+  .link-btn:hover { color: var(--sage-dark); }
+
+  /* ---- Dashboard ---- */
+  .dash-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 16px 40px;
+  }
+  .dash-content::-webkit-scrollbar { width: 8px; }
+  .dash-content::-webkit-scrollbar-thumb { background: var(--line); border-radius: 8px; }
+  .dash-wrap { max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+  .card {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 18px 20px;
+    animation: msgIn 0.2s ease;
+  }
+  .card h2 { font-size: 14.5px; margin: 0 0 3px; color: var(--ink); }
+  .card .sub { color: var(--ink-dim); font-size: 12.5px; margin: 0 0 12px; line-height: 1.6; }
+  .card .status { font-size: 12px; margin-top: 8px; }
+  .card .status.ok { color: var(--sage-dark); }
+  .card .status.err { color: #c17a5a; }
+  .profile-row { display: flex; align-items: center; gap: 14px; margin-bottom: 4px; }
+  .profile-row .avatar-md {
+    width: 52px; height: 52px; border-radius: 50%;
+    background: var(--lav);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; flex-shrink: 0;
+    overflow: hidden;
+  }
+  .profile-row .profile-name { font-weight: 700; font-size: 15px; color: var(--ink); }
+  .card textarea {
+    width: 100%; min-height: 70px; resize: vertical;
+    background: var(--cream); border: 1px solid var(--line); color: var(--ink);
+    padding: 12px 14px; border-radius: 14px; font-family: inherit; font-size: 14px; outline: none;
+  }
+  .card textarea:focus { border-color: var(--sage); }
+  .card-btn-row { display: flex; justify-content: flex-end; margin-top: 10px; }
+  .btn-sage {
+    background: var(--sage); color: #fff; border: none;
+    border-radius: 20px; padding: 9px 20px; font-family: inherit;
+    font-size: 13px; font-weight: 700; cursor: pointer;
+  }
+  .btn-sage:hover { background: var(--sage-dark); }
+  .btn-sage-outline {
+    background: #fff; color: var(--sage-dark); border: 1px solid var(--line);
+    border-radius: 20px; padding: 12px 20px; font-family: inherit;
+    font-size: 14px; font-weight: 700; cursor: pointer; width: 100%;
+  }
+  .btn-sage-outline:hover { background: var(--lav); }
+  .friend-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 9px 0; border-bottom: 1px solid var(--line); gap: 10px;
+  }
+  .friend-row:last-child { border-bottom: none; }
+  .friend-row .fname { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+  .friend-row .factions { display: flex; gap: 6px; flex-shrink: 0; }
+  .btn-mini {
+    border: none; border-radius: 14px; padding: 6px 12px; font-family: inherit;
+    font-size: 12px; font-weight: 700; cursor: pointer;
+  }
+  .btn-mini.accept { background: var(--sage); color: #fff; }
+  .btn-mini.accept:hover { background: var(--sage-dark); }
+  .btn-mini.decline { background: var(--peach); color: var(--peach-text); }
+  .btn-mini.decline:hover { filter: brightness(0.95); }
+  .btn-mini.neutral { background: var(--lav); color: var(--lav-text); }
+  .btn-mini.neutral:hover { filter: brightness(0.95); }
+  .add-friend-row { display: flex; gap: 8px; margin-top: 4px; }
+  .add-friend-row input {
+    flex: 1; background: var(--cream); border: 1px solid var(--line); color: var(--ink);
+    padding: 10px 13px; border-radius: 14px; font-family: inherit; font-size: 13.5px; outline: none;
+  }
+  .add-friend-row input:focus { border-color: var(--sage); }
+  .friend-section-label {
+    font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--ink-dim); margin: 14px 0 2px;
+  }
+  .friend-section-label:first-child { margin-top: 4px; }
+  .btn-mini.call { background: var(--moss); color: #fff; }
+  .btn-mini.call:hover { filter: brightness(1.1); }
+  .btn-mini.call:disabled { opacity: 0.5; cursor: default; filter: none; }
+
+  /* ---- Voice call ---- */
+  .call-minibar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 40;
+    display: flex; align-items: center; gap: 10px;
+    background: var(--moss); color: #fff; padding: 9px 14px;
+    font-size: 13px; cursor: pointer; box-shadow: 0 2px 10px #0002;
+  }
+  .call-minibar .mini-avatar {
+    width: 26px; height: 26px; border-radius: 50%; background: var(--sage);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; overflow: hidden; flex-shrink: 0;
+  }
+  .call-minibar .mini-name { font-weight: 700; flex: 1; }
+  .call-minibar .mini-time { opacity: 0.85; font-variant-numeric: tabular-nums; }
+  .call-minibar .mini-hangup {
+    background: #ffffff30; border: none; color: #fff; width: 26px; height: 26px;
+    border-radius: 50%; cursor: pointer; font-size: 13px; flex-shrink: 0;
+  }
+  .call-overlay {
+    position: fixed; inset: 0; z-index: 50; background: var(--cream);
+    display: flex; flex-direction: column; animation: msgIn 0.2s ease;
+  }
+  .call-top {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 16px 0;
+  }
+  .call-top .call-timer {
+    font-size: 12.5px; color: var(--ink-dim); font-variant-numeric: tabular-nums;
+  }
+  .call-body {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 22px; padding: 20px;
+  }
+  .call-status-text { color: var(--ink-dim); font-size: 13.5px; }
+  .call-peer-name { font-size: 20px; font-weight: 800; color: var(--ink); margin-top: 4px; }
+  .call-avatar-ring {
+    width: 128px; height: 128px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    border: 4px solid transparent; transition: border-color 0.15s ease;
+  }
+  .call-avatar-ring.speaking { border-color: var(--sage); }
+  .call-avatar {
+    width: 116px; height: 116px; border-radius: 50%; background: var(--lav);
+    color: var(--lav-text); display: flex; align-items: center; justify-content: center;
+    font-size: 44px; overflow: hidden;
+  }
+  .call-self-strip { display: flex; align-items: center; gap: 10px; }
+  .call-self-strip .call-avatar-ring { width: 52px; height: 52px; border-width: 3px; }
+  .call-self-strip .call-avatar { width: 44px; height: 44px; font-size: 18px; }
+  .call-self-strip span { font-size: 12.5px; color: var(--ink-dim); font-weight: 600; }
+  .call-controls { display: flex; justify-content: center; gap: 22px; padding: 10px 20px 40px; }
+  .call-grid { display: flex; flex-wrap: wrap; gap: 26px; justify-content: center; max-width: 420px; }
+  .call-tile { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .call-tile .call-avatar-ring { width: 92px; height: 92px; }
+  .call-tile .call-avatar { width: 82px; height: 82px; font-size: 32px; }
+  .call-tile-name { font-size: 12.5px; font-weight: 700; color: var(--ink); }
+  .call-tile-sub { font-size: 11px; color: var(--ink-dim); }
+  .call-min-btn {
+    background: var(--lav); color: var(--lav-text); border: none;
+    width: 34px; height: 34px; border-radius: 50%; font-size: 15px; cursor: pointer;
+  }
+  .call-pick-row {
+    display: flex; align-items: center; gap: 10px; padding: 8px 0;
+    border-bottom: 1px solid var(--line); font-size: 13.5px; color: var(--ink); cursor: pointer;
+  }
+  .call-pick-row:last-child { border-bottom: none; }
+  .call-pick-row input { width: 16px; height: 16px; accent-color: var(--sage); cursor: pointer; }
+  .call-ctrl-btn {
+    width: 58px; height: 58px; border-radius: 50%; border: none; cursor: pointer;
+    font-size: 22px; display: flex; align-items: center; justify-content: center;
+    background: #fff; border: 1px solid var(--line); color: var(--ink);
+  }
+  .call-ctrl-btn.muted { background: var(--peach); color: var(--peach-text); border-color: transparent; }
+  .call-ctrl-btn.hangup { background: #d0684a; color: #fff; border-color: transparent; }
+  .call-ctrl-btn.hangup:hover { background: #b8563b; }
+  .call-ctrl-btn.accept { background: var(--sage); color: #fff; border-color: transparent; }
+  .call-ctrl-btn.accept:hover { background: var(--sage-dark); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+(function() {
+  const root = document.getElementById('root');
+  const socket = io();
+  const DEFAULT_AVATAR = { type: 'text', value: '(ー_ー)' };
+  let avatar = DEFAULT_AVATAR;
+
+  function applyAvatar(newAvatar) {
+    avatar = newAvatar || DEFAULT_AVATAR;
+  }
+
+  function avatarInnerHTML() {
+    if (avatar && avatar.type === 'image' && avatar.dataUrl) {
+      return `<img src="${avatar.dataUrl}" alt="" style="width:100%;height:100%;object-fit:cover;" />`;
+    }
+    return esc((avatar && avatar.value) || DEFAULT_AVATAR.value);
+  }
+  let name = '';
+  let lastTypedName = '';
+  let messages = [];
+  let currentCustomRoom = null; // { id, name, ownerName, public, members } while viewing a custom room
+  let customRoomMessages = [];
+  const typingTimeouts = new Map();
+
+  let audioCtx = null;
+  function playBing() {
+    try {
+      if (!audioCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        audioCtx = new AC();
+      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, now);
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.15, now + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(now);
+      osc.stop(now + 0.35);
+    } catch (e) {
+      // Audio isn't available in this browser/context — fail silently.
+    }
+  }
+
+  function esc(s) {
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  // ==== Voice calls (group-capable mesh, WebRTC signaled over the same socket) ====
+  const ICE_SERVERS = [{ urls: 'stun:stun.l.google.com:19302' }];
+  let myCallId = null;
+  let callMembers = new Map(); // name -> { avatar, status: 'invited'|'joined', pc, stream }
+  let localStream = null;
+  let callMuted = false;
+  let callStartedAt = null;
+  let callTimerHandle = null;
+  let callMinimized = false;
+  let speakingCtx = null;
+  let speakingAnalysers = null; // name -> { an, data }
+  let speakingRAF = null;
+  const remoteAudioEls = new Map(); // name -> <audio>
+
+  function callAvatarHTML(av) {
+    if (av && av.type === 'image' && av.dataUrl) {
+      return `<img src="${av.dataUrl}" alt="" style="width:100%;height:100%;object-fit:cover;" />`;
+    }
+    return esc((av && av.value) || DEFAULT_AVATAR.value);
+  }
+
+  function fmtCallTime(ms) {
+    const s = Math.max(0, Math.floor(ms / 1000));
+    const mm = String(Math.floor(s / 60)).padStart(2, '0');
+    const ss = String(s % 60).padStart(2, '0');
+    return `${mm}:${ss}`;
+  }
+
+  function otherCallMembers() {
+    return [...callMembers.entries()].filter(([n]) => n !== name);
+  }
+
+  function amIInvited() {
+    const mine = callMembers.get(name);
+    return !!mine && mine.status === 'invited';
+  }
+
+  async function ensureLocalStream() {
+    if (!localStream) localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    return localStream;
+  }
+
+  function createPeerConnectionFor(peerName) {
+    const peerConn = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+    peerConn.onicecandidate = e => {
+      if (e.candidate) socket.emit('call-signal', { callId: myCallId, to: peerName, data: { type: 'candidate', candidate: e.candidate } });
+    };
+    peerConn.ontrack = e => {
+      const member = callMembers.get(peerName);
+      if (member) member.stream = e.streams[0];
+      let audioEl = remoteAudioEls.get(peerName);
+      if (!audioEl) {
+        audioEl = document.createElement('audio');
+        audioEl.autoplay = true;
+        remoteAudioEls.set(peerName, audioEl);
+      }
+      audioEl.srcObject = e.streams[0];
+      audioEl.play().catch(() => {});
+      startSpeakingMeterFor(peerName);
+    };
+    const member = callMembers.get(peerName);
+    if (member) member.pc = peerConn;
+    return peerConn;
+  }
+
+  // Only ever called by a NEWCOMER, once per already-joined member — this one-directional
+  // rule (newcomer always originates) is what keeps the mesh negotiation glare-free.
+  async function connectToExistingMember(peerName) {
+    const peerConn = createPeerConnectionFor(peerName);
+    localStream.getTracks().forEach(t => peerConn.addTrack(t, localStream));
+    const offer = await peerConn.createOffer();
+    await peerConn.setLocalDescription(offer);
+    socket.emit('call-signal', { callId: myCallId, to: peerName, data: { type: 'offer', sdp: offer } });
+  }
+
+  async function startCall(participantNames) {
+    if (myCallId) {
+      alert("You're already on a call — hang up first.");
+      return;
+    }
+    const names = Array.isArray(participantNames) ? participantNames : [participantNames];
+    try {
+      await ensureLocalStream();
+    } catch (e) {
+      alert("Couldn't access your microphone. Check your browser's permissions and try again.");
+      return;
+    }
+    socket.emit('start-call', { participantNames: names });
+  }
+
+  async function acceptIncomingCall() {
+    if (!myCallId) return;
+    try {
+      await ensureLocalStream();
+    } catch (e) {
+      socket.emit('call-response', { callId: myCallId, accept: false });
+      teardownCall();
+      return;
+    }
+    socket.emit('call-response', { callId: myCallId, accept: true });
+    const mine = callMembers.get(name);
+    if (mine) mine.status = 'joined';
+    callStartedAt = Date.now();
+    startCallTimer();
+    renderCallUI();
+  }
+
+  function declineIncomingCall() {
+    if (!myCallId) return;
+    socket.emit('call-response', { callId: myCallId, accept: false });
+    teardownCall();
+  }
+
+  function leaveCurrentCall() {
+    if (!myCallId) return;
+    socket.emit('call-leave', { callId: myCallId });
+    teardownCall();
+  }
+
+  function teardownCall() {
+    stopSpeakingMeter();
+    if (callTimerHandle) { clearInterval(callTimerHandle); callTimerHandle = null; }
+    callMembers.forEach(m => { if (m.pc) { try { m.pc.close(); } catch (e) {} } });
+    callMembers = new Map();
+    remoteAudioEls.forEach(el => { el.srcObject = null; });
+    remoteAudioEls.clear();
+    if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
+    myCallId = null;
+    callMuted = false;
+    callStartedAt = null;
+    callMinimized = false;
+    removeCallUI();
+  }
+
+  function toggleMute() {
+    if (!localStream) return;
+    callMuted = !callMuted;
+    localStream.getAudioTracks().forEach(t => { t.enabled = !callMuted; });
+    renderCallUI();
+  }
+
+  function startCallTimer() {
+    if (callTimerHandle) clearInterval(callTimerHandle);
+    callTimerHandle = setInterval(() => {
+      if (!callStartedAt) return;
+      const label = document.getElementById('call-timer-label');
+      if (label) label.textContent = fmtCallTime(Date.now() - callStartedAt);
+      const mini = document.getElementById('call-mini-time');
+      if (mini) mini.textContent = fmtCallTime(Date.now() - callStartedAt);
+    }, 1000);
+  }
+
+  function startSpeakingMeterFor(peerName) {
+    if (!speakingCtx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      speakingCtx = new AC();
+      speakingAnalysers = new Map();
+      startSpeakingLoop();
+    }
+    ensureLocalSpeakingMeter();
+    if (speakingAnalysers.has(peerName)) return;
+    const member = callMembers.get(peerName);
+    if (!member || !member.stream) return;
+    const src = speakingCtx.createMediaStreamSource(member.stream);
+    const an = speakingCtx.createAnalyser();
+    an.fftSize = 512;
+    src.connect(an);
+    speakingAnalysers.set(peerName, { an, data: new Uint8Array(an.frequencyBinCount) });
+  }
+
+  function ensureLocalSpeakingMeter() {
+    if (!speakingCtx || !speakingAnalysers || speakingAnalysers.has(name) || !localStream) return;
+    const src = speakingCtx.createMediaStreamSource(localStream);
+    const an = speakingCtx.createAnalyser();
+    an.fftSize = 512;
+    src.connect(an);
+    speakingAnalysers.set(name, { an, data: new Uint8Array(an.frequencyBinCount) });
+  }
+
+  function startSpeakingLoop() {
+    function tick() {
+      if (speakingAnalysers) {
+        speakingAnalysers.forEach((a, who) => {
+          a.an.getByteFrequencyData(a.data);
+          const avg = a.data.reduce((x, y) => x + y, 0) / a.data.length;
+          setRingSpeaking(who, avg > 14);
+        });
+      }
+      if (myCallId) speakingRAF = requestAnimationFrame(tick);
+    }
+    tick();
+  }
+
+  function setRingSpeaking(memberName, speaking) {
+    const el = document.querySelector(`.call-avatar-ring[data-member="${CSS.escape(memberName)}"]`);
+    if (el) el.classList.toggle('speaking', speaking);
+  }
+
+  function stopSpeakingMeter() {
+    if (speakingRAF) { cancelAnimationFrame(speakingRAF); speakingRAF = null; }
+    if (speakingCtx) { try { speakingCtx.close(); } catch (e) {} speakingCtx = null; }
+    speakingAnalysers = null;
+  }
+
+  function removeCallUI() {
+    const ov = document.getElementById('call-overlay');
+    if (ov) ov.remove();
+    const mini = document.getElementById('call-minibar');
+    if (mini) mini.remove();
+  }
+
+  function renderCallUI() {
+    removeCallUI();
+    if (!myCallId) return;
+
+    if (callMinimized) {
+      const bar = document.createElement('div');
+      bar.className = 'call-minibar';
+      bar.id = 'call-minibar';
+      const others = otherCallMembers();
+      const soleOther = others.length === 1 ? others[0] : null;
+      const label = soleOther ? soleOther[0] : `${others.length + 1}-person call`;
+      bar.innerHTML = `
+        <div class="mini-avatar">${soleOther ? callAvatarHTML(soleOther[1].avatar) : '👥'}</div>
+        <span class="mini-name">${esc(label)}</span>
+        <span class="mini-time" id="call-mini-time">${callStartedAt ? fmtCallTime(Date.now() - callStartedAt) : '00:00'}</span>
+        <button class="mini-hangup" id="mini-hangup-btn" type="button" aria-label="Hang up">✕</button>
+      `;
+      document.body.appendChild(bar);
+      bar.onclick = () => { callMinimized = false; renderCallUI(); };
+      document.getElementById('mini-hangup-btn').onclick = e => { e.stopPropagation(); leaveCurrentCall(); };
+      return;
+    }
+
+    const ov = document.createElement('div');
+    ov.className = 'call-overlay';
+    ov.id = 'call-overlay';
+
+    if (amIInvited()) {
+      const others = otherCallMembers();
+      const caller = others.find(([, m]) => m.status === 'joined') || others[0] || [null, {}];
+      const extra = others.length - 1;
+      ov.innerHTML = `
+        <div class="call-top"><span style="width:34px;"></span><span class="call-timer"></span><span style="width:34px;"></span></div>
+        <div class="call-body">
+          <div class="call-avatar-ring"><div class="call-avatar">${callAvatarHTML(caller[1].avatar)}</div></div>
+          <div style="text-align:center;">
+            <div class="call-peer-name">${esc(caller[0] || '')}${extra > 0 ? ` +${extra} more` : ''}</div>
+            <div class="call-status-text">Incoming call…</div>
+          </div>
+        </div>
+        <div class="call-controls">
+          <button class="call-ctrl-btn hangup" id="call-decline-btn" type="button" aria-label="Decline">☎</button>
+          <button class="call-ctrl-btn accept" id="call-accept-btn" type="button" aria-label="Accept">☎</button>
+        </div>
+      `;
+      document.body.appendChild(ov);
+      document.getElementById('call-decline-btn').onclick = declineIncomingCall;
+      document.getElementById('call-accept-btn').onclick = acceptIncomingCall;
+      return;
+    }
+
+    const allEntries = [[name, { avatar, status: 'joined' }], ...otherCallMembers()];
+    const headerStatus = otherCallMembers().some(([, m]) => m.status === 'joined') ? '' : 'Calling…';
+    const tilesHtml = allEntries.map(([n, m]) => `
+      <div class="call-tile">
+        <div class="call-avatar-ring" data-member="${esc(n)}">
+          <div class="call-avatar">${callAvatarHTML(m.avatar)}</div>
+        </div>
+        <div class="call-tile-name">${n === name ? 'You' : esc(n)}</div>
+        ${m.status === 'invited' ? '<div class="call-tile-sub">Ringing…</div>' : ''}
+      </div>
+    `).join('');
+
+    ov.innerHTML = `
+      <div class="call-top">
+        <button class="call-min-btn" id="call-minimize-btn" type="button" aria-label="Minimize">⌄</button>
+        <span class="call-timer" id="call-timer-label">${callStartedAt ? fmtCallTime(Date.now() - callStartedAt) : ''}</span>
+        <span style="width:34px;"></span>
+      </div>
+      <div class="call-body">
+        <div class="call-status-text" style="min-height:16px;">${headerStatus}</div>
+        <div class="call-grid">${tilesHtml}</div>
+      </div>
+      <div class="call-controls">
+        <button class="call-ctrl-btn${callMuted ? ' muted' : ''}" id="call-mute-btn" type="button" aria-label="Mute">${callMuted ? '🔇' : '🎤'}</button>
+        <button class="call-ctrl-btn hangup" id="call-hangup-btn" type="button" aria-label="Leave call">☎</button>
+      </div>
+    `;
+    document.body.appendChild(ov);
+    document.getElementById('call-mute-btn').onclick = toggleMute;
+    document.getElementById('call-hangup-btn').onclick = leaveCurrentCall;
+    document.getElementById('call-minimize-btn').onclick = () => { callMinimized = true; renderCallUI(); };
+  }
+
+  socket.on('call-started', ({ callId, roster, unreachable }) => {
+    myCallId = callId;
+    callMembers = new Map(roster.map(m => [m.name, { avatar: m.avatar, status: m.status }]));
+    callStartedAt = Date.now();
+    startCallTimer();
+    renderCallUI();
+    if (unreachable && unreachable.length) {
+      setTimeout(() => alert(`Couldn't reach: ${unreachable.join(', ')}`), 50);
+    }
+  });
+
+  socket.on('incoming-call', ({ callId, roster }) => {
+    if (myCallId) {
+      socket.emit('call-response', { callId, accept: false });
+      return;
+    }
+    myCallId = callId;
+    callMembers = new Map(roster.map(m => [m.name, { avatar: m.avatar, status: m.status }]));
+    renderCallUI();
+  });
+
+  socket.on('call-roster', ({ callId, roster }) => {
+    if (callId !== myCallId) return;
+    const prev = callMembers;
+    callMembers = new Map(roster.map(m => [m.name, {
+      avatar: m.avatar, status: m.status,
+      pc: prev.get(m.name) && prev.get(m.name).pc,
+      stream: prev.get(m.name) && prev.get(m.name).stream
+    }]));
+    roster.forEach(m => {
+      if (m.name !== name && m.status === 'joined' && !callMembers.get(m.name).pc) {
+        connectToExistingMember(m.name);
+      }
+    });
+    renderCallUI();
+  });
+
+  socket.on('call-participant-joined', ({ callId, name: joinedName, avatar: joinedAvatar }) => {
+    if (callId !== myCallId) return;
+    callMembers.set(joinedName, { avatar: joinedAvatar, status: 'joined' });
+    renderCallUI();
+    // Wait passively for their offer via call-signal — the newcomer always originates.
+  });
+
+  socket.on('call-participant-left', ({ callId, name: leftName }) => {
+    if (callId !== myCallId) return;
+    const member = callMembers.get(leftName);
+    if (member && member.pc) { try { member.pc.close(); } catch (e) {} }
+    callMembers.delete(leftName);
+    const audioEl = remoteAudioEls.get(leftName);
+    if (audioEl) { audioEl.srcObject = null; remoteAudioEls.delete(leftName); }
+    if (otherCallMembers().length === 0) teardownCall();
+    else renderCallUI();
+  });
+
+  socket.on('call-signal', async ({ callId, from, data }) => {
+    if (callId !== myCallId || !data) return;
+    const member = callMembers.get(from);
+    if (!member) return;
+    if (data.type === 'offer') {
+      const isNew = !member.pc;
+      const peerConn = member.pc || createPeerConnectionFor(from);
+      if (isNew) localStream.getTracks().forEach(t => peerConn.addTrack(t, localStream));
+      await peerConn.setRemoteDescription(new RTCSessionDescription(data.sdp));
+      const answer = await peerConn.createAnswer();
+      await peerConn.setLocalDescription(answer);
+      socket.emit('call-signal', { callId: myCallId, to: from, data: { type: 'answer', sdp: answer } });
+    } else if (data.type === 'answer') {
+      if (member.pc) await member.pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+    } else if (data.type === 'candidate' && data.candidate) {
+      if (member.pc) { try { await member.pc.addIceCandidate(new RTCIceCandidate(data.candidate)); } catch (e) {} }
+    }
+  });
+
+  socket.on('call-error', ({ message }) => {
+    alert(message || "Couldn't place that call.");
+  });
+
+  function fileKind(mime, filename) {
+    const ext = (filename.split('.').pop() || '').toLowerCase();
+    if (mime.startsWith('image/')) return 'image';
+    if (mime.startsWith('video/')) return 'video';
+    if (mime.startsWith('audio/')) return 'audio';
+    if (mime === 'application/pdf' || ext === 'pdf') return 'pdf';
+    if (['doc', 'docx', 'rtf', 'odt'].includes(ext)) return 'doc';
+    if (['xls', 'xlsx', 'csv', 'ods'].includes(ext)) return 'sheet';
+    if (['ppt', 'pptx', 'odp'].includes(ext)) return 'slide';
+    if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) return 'archive';
+    return 'file';
+  }
+  const FILE_LABELS = { pdf: 'PDF', doc: 'DOC', sheet: 'XLS', slide: 'PPT', archive: 'ZIP', audio: 'MP3', file: 'FILE' };
+
+  function renderGate(errorMsg) {
+    root.innerHTML = `
+      <div class="app">
+        <div class="gate">
+          <div class="avatar-lg">(ー_ー)</div>
+          <h1>The room</h1>
+          <p>Enter a name and password. New names create an account with that password — existing names need the matching one.</p>
+          <div class="gate-field">
+            <label for="name-in">Name</label>
+            <input id="name-in" type="text" maxlength="24" placeholder="Enter a name" />
+          </div>
+          <div class="gate-field">
+            <label for="pass-in">Password</label>
+            <input id="pass-in" type="password" maxlength="64" placeholder="Choose or enter your password" />
+          </div>
+          ${errorMsg ? `<div class="err">${esc(errorMsg)}</div>` : ''}
+          <button class="join" id="join-btn">Continue</button>
+          <span class="link-btn" id="forgot-link">Forgot password?</span>
+          <a class="link-btn" href="/download" style="text-decoration: underline; margin-top: 2px;">Download desktop app</a>
+        </div>
+      </div>
+    `;
+    const nameIn = document.getElementById('name-in');
+    const passIn = document.getElementById('pass-in');
+    const go = () => {
+      const typedName = nameIn.value.trim();
+      const typedPass = passIn.value.trim();
+      if (!typedName || !typedPass) return;
+      lastTypedName = typedName;
+      socket.emit('login', { name: typedName, password: typedPass });
+    };
+    document.getElementById('join-btn').onclick = go;
+    document.getElementById('forgot-link').onclick = () => renderPasswordRecovery();
+    [nameIn, passIn].forEach(el => el.addEventListener('keydown', e => { if (e.key === 'Enter') go(); }));
+    nameIn.focus();
+  }
+
+  function renderPasswordRecovery(errorMsg) {
+    root.innerHTML = `
+      <div class="app">
+        <div class="gate">
+          <div class="avatar-lg">(ー_ー)</div>
+          <h1>Password recovery</h1>
+          <p>Type your name and a new password to use from now on. Your old password stops working immediately.</p>
+          <div class="gate-field">
+            <label for="recover-name-in">Name</label>
+            <input id="recover-name-in" type="text" maxlength="24" placeholder="Enter your name" />
+          </div>
+          <div class="gate-field">
+            <label for="recover-pass-in">New password</label>
+            <input id="recover-pass-in" type="password" maxlength="64" placeholder="Choose a new password" />
+          </div>
+          ${errorMsg ? `<div class="err">${esc(errorMsg)}</div>` : ''}
+          <button class="join" id="recover-btn">Set new password</button>
+          <span class="link-btn" id="back-to-gate-link">Back</span>
+        </div>
+      </div>
+    `;
+    const recoverNameIn = document.getElementById('recover-name-in');
+    const recoverPassIn = document.getElementById('recover-pass-in');
+    const go = () => {
+      const typedName = recoverNameIn.value.trim();
+      const typedPass = recoverPassIn.value.trim();
+      if (!typedName || !typedPass) return;
+      socket.emit('recover-password', { name: typedName, password: typedPass });
+    };
+    document.getElementById('recover-btn').onclick = go;
+    document.getElementById('back-to-gate-link').onclick = () => renderGate();
+    [recoverNameIn, recoverPassIn].forEach(el => el.addEventListener('keydown', e => { if (e.key === 'Enter') go(); }));
+    recoverNameIn.focus();
+  }
+
+  function renderRoom() {
+    root.innerHTML = `
+      <div class="app">
+        <div class="topbar">
+          <div class="avatar">${avatarInnerHTML()}</div>
+          <div class="titles">
+            <span class="room-name">The room</span>
+            <span class="room-sub">tap to see who's here</span>
+          </div>
+          <button class="switch" id="dashboard-btn" type="button">${esc(name)} &middot; dashboard</button>
+        </div>
+        <div class="log" id="log">
+          <div class="empty">No messages yet.<br/>Say hi whenever you are ready.</div>
+        </div>
+        <div class="typing-indicator" id="typing-indicator"></div>
+        <div class="attach-preview" id="attach-preview"></div>
+        <div class="picker" id="picker">
+          ${['😀','😂','😍','🥲','😎','🤔','😴','😭','🥳','👍','🙏','🔥','❤️','✨','🎉','🌱','☕','🌙',
+             '(ー_ー)','(^_^)','(T_T)','(・_・)','(¬_¬)','(o_o)','(>_<)','(*_*)','\\(^o^)/','(-_-)zzz','(╯°□°）╯','ヽ(・∀・)ﾉ']
+            .map(e => `<button data-emoji="${esc(e)}">${esc(e)}</button>`).join('')}
+        </div>
+        <div class="inputrow">
+          <input type="file" id="file-in" style="display:none;" />
+          <button id="attach-toggle" class="attach-toggle" aria-label="Attach a file" type="button">+</button>
+          <button id="picker-toggle" class="picker-toggle" aria-label="Emoji and kaomoji picker" type="button">☺</button>
+          <input type="text" id="msg-in" maxlength="500" placeholder="Type a message" autocomplete="off" />
+          <button id="send-btn" aria-label="Send" type="button">&#8594;</button>
+        </div>
+      </div>
+    `;
+
+    const input = document.getElementById('msg-in');
+    let pendingAttachment = null;
+    const preview = document.getElementById('attach-preview');
+    const fileIn = document.getElementById('file-in');
+    let typingActive = false;
+    let typingStopTimer = null;
+
+    function clearAttachment() {
+      pendingAttachment = null;
+      fileIn.value = '';
+      preview.classList.remove('open');
+      preview.innerHTML = '';
+    }
+    function showPreview() {
+      if (!pendingAttachment) return;
+      const kind = fileKind(pendingAttachment.mime, pendingAttachment.filename);
+      preview.innerHTML = `
+        ${kind === 'image'
+          ? `<img src="${pendingAttachment.dataUrl}" alt="" />`
+          : `<div class="file-chip file-icon k-${kind}" style="border-radius: 8px;">${FILE_LABELS[kind] || 'FILE'}</div>`}
+        <span class="name">${esc(pendingAttachment.filename)}</span>
+        <button class="remove" id="remove-attach" type="button">Remove</button>
+      `;
+      preview.classList.add('open');
+      document.getElementById('remove-attach').onclick = clearAttachment;
+    }
+    document.getElementById('attach-toggle').onclick = () => fileIn.click();
+    fileIn.addEventListener('change', () => {
+      const file = fileIn.files[0];
+      if (!file) return;
+      const MAX_BYTES = 3 * 1024 * 1024;
+      if (file.size > MAX_BYTES) {
+        alert('That file is too big. Please choose something under 3MB.');
+        fileIn.value = '';
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        pendingAttachment = { filename: file.name, mime: file.type || 'application/octet-stream', dataUrl: reader.result };
+        showPreview();
+      };
+      reader.readAsDataURL(file);
+    });
+
+    function stopTyping() {
+      if (typingActive) {
+        typingActive = false;
+        socket.emit('stop-typing');
+      }
+      if (typingStopTimer) clearTimeout(typingStopTimer);
+    }
+
+    const send = () => {
+      const text = input.value.trim();
+      if (!text && !pendingAttachment) return;
+      input.value = '';
+      const attachment = pendingAttachment;
+      clearAttachment();
+      stopTyping();
+      socket.emit('message', { text, attachment });
+    };
+    document.getElementById('send-btn').onclick = send;
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') send();
+    });
+    input.addEventListener('input', () => {
+      if (input.value.trim()) {
+        if (!typingActive) {
+          typingActive = true;
+          socket.emit('typing');
+        }
+        if (typingStopTimer) clearTimeout(typingStopTimer);
+        typingStopTimer = setTimeout(stopTyping, 2500);
+      } else {
+        stopTyping();
+      }
+    });
+
+    const picker = document.getElementById('picker');
+    document.getElementById('picker-toggle').onclick = () => picker.classList.toggle('open');
+    picker.querySelectorAll('button').forEach(btn => {
+      btn.onclick = () => {
+        const val = btn.getAttribute('data-emoji');
+        input.value = input.value + (input.value && !input.value.endsWith(' ') ? ' ' : '') + val + ' ';
+        input.focus();
+      };
+    });
+
+    document.getElementById('dashboard-btn').onclick = () => {
+      stopTyping();
+      renderDashboard();
+    };
+    input.focus();
+    renderMessages();
+  }
+
+  function renderCustomRoom(room) {
+    currentCustomRoom = room;
+    root.innerHTML = `
+      <div class="app">
+        <div class="topbar">
+          <div class="avatar">${avatarInnerHTML()}</div>
+          <div class="titles">
+            <span class="room-name">${esc(room.name)}</span>
+            <span class="room-sub">${room.public ? 'public room' : 'private room'} &middot; ${room.members.length} member${room.members.length === 1 ? '' : 's'}</span>
+          </div>
+          <button class="switch" id="dashboard-btn" type="button">${esc(name)} &middot; dashboard</button>
+        </div>
+        <div class="log" id="log">
+          <div class="empty">No messages yet.<br/>Say hi whenever you are ready.</div>
+        </div>
+        <div class="typing-indicator" id="typing-indicator"></div>
+        <div class="attach-preview" id="attach-preview"></div>
+        <div class="picker" id="picker">
+          ${['😀','😂','😍','🥲','😎','🤔','😴','😭','🥳','👍','🙏','🔥','❤️','✨','🎉','🌱','☕','🌙',
+             '(ー_ー)','(^_^)','(T_T)','(・_・)','(¬_¬)','(o_o)','(>_<)','(*_*)','\\(^o^)/','(-_-)zzz','(╯°□°）╯','ヽ(・∀・)ﾉ']
+            .map(e => `<button data-emoji="${esc(e)}">${esc(e)}</button>`).join('')}
+        </div>
+        <div class="inputrow">
+          <input type="file" id="file-in" style="display:none;" />
+          <button id="attach-toggle" class="attach-toggle" aria-label="Attach a file" type="button">+</button>
+          <button id="picker-toggle" class="picker-toggle" aria-label="Emoji and kaomoji picker" type="button">☺</button>
+          <input type="text" id="msg-in" maxlength="500" placeholder="Type a message" autocomplete="off" />
+          <button id="send-btn" aria-label="Send" type="button">&#8594;</button>
+        </div>
+      </div>
+    `;
+
+    const input = document.getElementById('msg-in');
+    let pendingAttachment = null;
+    const preview = document.getElementById('attach-preview');
+    const fileIn = document.getElementById('file-in');
+    let typingActive = false;
+    let typingStopTimer = null;
+
+    function clearAttachment() {
+      pendingAttachment = null;
+      fileIn.value = '';
+      preview.classList.remove('open');
+      preview.innerHTML = '';
+    }
+    function showPreview() {
+      if (!pendingAttachment) return;
+      const kind = fileKind(pendingAttachment.mime, pendingAttachment.filename);
+      preview.innerHTML = `
+        ${kind === 'image'
+          ? `<img src="${pendingAttachment.dataUrl}" alt="" />`
+          : `<div class="file-chip file-icon k-${kind}" style="border-radius: 8px;">${FILE_LABELS[kind] || 'FILE'}</div>`}
+        <span class="name">${esc(pendingAttachment.filename)}</span>
+        <button class="remove" id="remove-attach" type="button">Remove</button>
+      `;
+      preview.classList.add('open');
+      document.getElementById('remove-attach').onclick = clearAttachment;
+    }
+    document.getElementById('attach-toggle').onclick = () => fileIn.click();
+    fileIn.addEventListener('change', () => {
+      const file = fileIn.files[0];
+      if (!file) return;
+      const MAX_BYTES = 3 * 1024 * 1024;
+      if (file.size > MAX_BYTES) {
+        alert('That file is too big. Please choose something under 3MB.');
+        fileIn.value = '';
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        pendingAttachment = { filename: file.name, mime: file.type || 'application/octet-stream', dataUrl: reader.result };
+        showPreview();
+      };
+      reader.readAsDataURL(file);
+    });
+
+    function stopTyping() {
+      if (typingActive) {
+        typingActive = false;
+        socket.emit('room-stop-typing', { roomId: room.id });
+      }
+      if (typingStopTimer) clearTimeout(typingStopTimer);
+    }
+
+    const send = () => {
+      const text = input.value.trim();
+      if (!text && !pendingAttachment) return;
+      input.value = '';
+      const attachment = pendingAttachment;
+      clearAttachment();
+      stopTyping();
+      socket.emit('room-message', { roomId: room.id, text, attachment });
+    };
+    document.getElementById('send-btn').onclick = send;
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') send();
+    });
+    input.addEventListener('input', () => {
+      if (input.value.trim()) {
+        if (!typingActive) {
+          typingActive = true;
+          socket.emit('room-typing', { roomId: room.id });
+        }
+        if (typingStopTimer) clearTimeout(typingStopTimer);
+        typingStopTimer = setTimeout(stopTyping, 2500);
+      } else {
+        stopTyping();
+      }
+    });
+
+    const picker = document.getElementById('picker');
+    document.getElementById('picker-toggle').onclick = () => picker.classList.toggle('open');
+    picker.querySelectorAll('button').forEach(btn => {
+      btn.onclick = () => {
+        const val = btn.getAttribute('data-emoji');
+        input.value = input.value + (input.value && !input.value.endsWith(' ') ? ' ' : '') + val + ' ';
+        input.focus();
+      };
+    });
+
+    document.getElementById('dashboard-btn').onclick = () => {
+      stopTyping();
+      socket.emit('leave-room-view');
+      currentCustomRoom = null;
+      renderDashboard();
+    };
+    input.focus();
+    renderCustomRoomMessages();
+  }
+
+  function renderDashboard() {
+    root.innerHTML = `
+      <div class="app">
+        <div class="topbar">
+          <div class="avatar">${avatarInnerHTML()}</div>
+          <div class="titles">
+            <span class="room-name">Dashboard</span>
+            <span class="room-sub">your space</span>
+          </div>
+          <button class="switch" id="logout-btn" type="button">${esc(name)} &middot; log out</button>
+        </div>
+        <div class="dash-content">
+          <div class="dash-wrap">
+
+            <div class="card">
+              <div class="profile-row">
+                <div class="avatar-md">${avatarInnerHTML()}</div>
+                <div class="profile-name">${esc(name)}</div>
+              </div>
+              <p class="sub" style="margin-top:10px;">Upload your own avatar, or keep the default.</p>
+              <div class="add-friend-row">
+                <input type="file" id="avatar-file-in" accept="image/*" style="display:none;" />
+                <button class="btn-sage-outline" id="avatar-upload-btn" style="width:auto; flex:1;">Upload an image</button>
+                <button class="btn-sage-outline" id="avatar-reset-btn" style="width:auto; flex-shrink:0;">Reset</button>
+              </div>
+              <div class="status" id="avatar-status"></div>
+            </div>
+
+            <div class="card">
+              <h2>Account</h2>
+              <p class="sub">Change your password. Your old one stops working right away.</p>
+              <div class="add-friend-row">
+                <input type="password" id="new-pass-in" maxlength="64" placeholder="New password" />
+                <button class="btn-sage" id="change-pass-btn">Save</button>
+              </div>
+              <div class="status" id="change-pass-status"></div>
+            </div>
+
+            <div class="card">
+              <h2>Notifications</h2>
+              <div id="notif-holder"><p class="sub" style="margin:0;">Nothing new yet.</p></div>
+            </div>
+
+            <div class="card">
+              <h2>Public Chat</h2>
+              <p class="sub">Everyone's in one shared room right now.</p>
+              <button class="btn-sage-outline" id="enter-chat-btn">Enter Public Chat</button>
+            </div>
+
+            <div class="card">
+              <h2>Your Rooms</h2>
+              <p class="sub">Rooms you own or belong to.</p>
+              <div id="my-rooms-holder"><p class="sub" style="margin:0;">Loading…</p></div>
+            </div>
+
+            <div class="card">
+              <h2>Create a Room</h2>
+              <p class="sub">Give it a name and decide who can see it.</p>
+              <div class="add-friend-row">
+                <input type="text" id="room-name-in" maxlength="40" placeholder="Room name" />
+              </div>
+              <div style="display:flex; gap:16px; margin-top:10px; font-size:13px; color:var(--ink);">
+                <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                  <input type="radio" name="room-visibility" value="private" checked /> Private
+                </label>
+                <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                  <input type="radio" name="room-visibility" value="public" /> Public
+                </label>
+              </div>
+              <div class="card-btn-row"><button class="btn-sage" id="create-room-btn">Create room</button></div>
+              <div class="status" id="room-status"></div>
+            </div>
+
+            <div class="card">
+              <h2>Browse Public Rooms</h2>
+              <p class="sub">Public rooms you haven't joined yet.</p>
+              <div id="public-rooms-holder"><p class="sub" style="margin:0;">Loading…</p></div>
+            </div>
+
+            <div class="card">
+              <h2>Friends</h2>
+              <p class="sub">Send a request by name — if they've already sent you one, this instantly accepts it.</p>
+              <div class="add-friend-row">
+                <input type="text" id="friend-name-in" maxlength="24" placeholder="Enter a name" />
+                <button class="btn-sage" id="add-friend-btn">Add</button>
+              </div>
+              <div class="status" id="friend-status"></div>
+              <div id="friends-holder"></div>
+            </div>
+
+            <div class="card">
+              <h2>Start a Call</h2>
+              <p class="sub">Pick one or more friends to ring at once — separate from the quick one-tap call on each friend above.</p>
+              <div id="call-picker-holder"><p class="sub" style="margin:0;">Add some friends first.</p></div>
+              <div class="card-btn-row"><button class="btn-sage" id="start-group-call-btn">Call</button></div>
+            </div>
+
+            <div class="card">
+              <h2>Suggestions</h2>
+              <p class="sub">Got an idea or something that's bugging you? Send it straight to the admin.</p>
+              <textarea id="suggestion-in" maxlength="1000" placeholder="Type a suggestion..."></textarea>
+              <div class="card-btn-row"><button class="btn-sage" id="send-suggestion-btn">Send</button></div>
+              <div class="status" id="suggestion-status"></div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('logout-btn').onclick = () => {
+      name = '';
+      renderGate();
+    };
+
+    document.getElementById('enter-chat-btn').onclick = () => renderRoom();
+
+    document.getElementById('create-room-btn').onclick = () => {
+      const el = document.getElementById('room-name-in');
+      const roomName = el.value.trim();
+      if (!roomName) return;
+      const isPublic = document.querySelector('input[name="room-visibility"]:checked').value === 'public';
+      socket.emit('create-room', { name: roomName, isPublic });
+    };
+    document.getElementById('room-name-in').addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('create-room-btn').click();
+    });
+
+    socket.emit('get-notifications');
+    refreshMyRooms();
+    refreshPublicRooms();
+
+    document.getElementById('avatar-reset-btn').onclick = () => {
+      socket.emit('set-avatar', { type: 'reset' });
+    };
+
+    document.getElementById('change-pass-btn').onclick = () => {
+      const input = document.getElementById('new-pass-in');
+      const typed = input.value.trim();
+      if (!typed) return;
+      if (!confirm('Change your password? Your current one will stop working immediately.')) return;
+      socket.emit('change-my-password', { password: typed });
+    };
+
+    const avatarFileIn = document.getElementById('avatar-file-in');
+    document.getElementById('avatar-upload-btn').onclick = () => avatarFileIn.click();
+    avatarFileIn.addEventListener('change', () => {
+      const file = avatarFileIn.files[0];
+      avatarFileIn.value = '';
+      if (!file) return;
+      const statusEl = document.getElementById('avatar-status');
+      if (statusEl) { statusEl.textContent = 'Processing image...'; statusEl.className = 'status'; }
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const size = 256;
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) throw new Error('no canvas support');
+            // Center-crop to a square, then scale down, so any photo
+            // shape/size becomes a small, consistent avatar image.
+            const minSide = Math.min(img.width, img.height);
+            const sx = (img.width - minSide) / 2;
+            const sy = (img.height - minSide) / 2;
+            ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+            socket.emit('set-avatar', { type: 'image', dataUrl, mime: 'image/jpeg' });
+          } catch (e) {
+            // Canvas unavailable for some reason — fall back to the original file,
+            // which still works as long as it's under the size limit.
+            socket.emit('set-avatar', { type: 'image', dataUrl: reader.result, mime: file.type || 'image/png' });
+          }
+        };
+        img.onerror = () => {
+          if (statusEl) { statusEl.textContent = "Couldn't read that image."; statusEl.className = 'status err'; }
+        };
+        img.src = reader.result;
+      };
+      reader.onerror = () => {
+        if (statusEl) { statusEl.textContent = "Couldn't read that file."; statusEl.className = 'status err'; }
+      };
+      reader.readAsDataURL(file);
+    });
+
+    document.getElementById('add-friend-btn').onclick = () => {
+      const el = document.getElementById('friend-name-in');
+      const typed = el.value.trim();
+      if (!typed) return;
+      socket.emit('send-friend-request', { name: typed });
+      el.value = '';
+    };
+    document.getElementById('friend-name-in').addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('add-friend-btn').click();
+    });
+
+    document.getElementById('start-group-call-btn').onclick = () => {
+      const checked = [...document.querySelectorAll('.call-pick-row input:checked')].map(el => el.value);
+      if (checked.length === 0) { alert('Pick at least one friend to call.'); return; }
+      startCall(checked);
+    };
+
+    socket.emit('get-friend-data');
+
+    document.getElementById('send-suggestion-btn').onclick = () => {
+      const el = document.getElementById('suggestion-in');
+      const text = el.value.trim();
+      if (!text) return;
+      socket.emit('submit-suggestion', { text });
+      el.value = '';
+    };
+  }
+
+  let friendData = { friends: [], incoming: [], outgoing: [] };
+
+  function renderCallPicker() {
+    const holder = document.getElementById('call-picker-holder');
+    if (!holder) return; // not on the dashboard right now
+    const { friends } = friendData;
+    if (!friends || friends.length === 0) {
+      holder.innerHTML = '<p class="sub" style="margin:0;">Add some friends first.</p>';
+      return;
+    }
+    holder.innerHTML = friends.map(n => `
+      <label class="call-pick-row">
+        <input type="checkbox" value="${esc(n)}" />
+        <span>${esc(n)}</span>
+      </label>
+    `).join('');
+  }
+
+  function renderFriendsList() {
+    const holder = document.getElementById('friends-holder');
+    if (!holder) return; // not on the dashboard right now
+    const { friends, incoming, outgoing } = friendData;
+    if (friends.length === 0 && incoming.length === 0 && outgoing.length === 0) {
+      holder.innerHTML = '<p class="sub" style="margin:10px 0 0;">No friends yet — add someone above.</p>';
+      return;
+    }
+    let html = '';
+    if (incoming.length > 0) {
+      html += '<div class="friend-section-label">Requests</div>';
+      html += incoming.map(n => `
+        <div class="friend-row">
+          <span class="fname">${esc(n)}</span>
+          <div class="factions">
+            <button class="btn-mini accept" data-action="accept" data-name="${esc(n)}">Accept</button>
+            <button class="btn-mini decline" data-action="decline" data-name="${esc(n)}">Decline</button>
+          </div>
+        </div>
+      `).join('');
+    }
+    if (outgoing.length > 0) {
+      html += '<div class="friend-section-label">Pending</div>';
+      html += outgoing.map(n => `
+        <div class="friend-row">
+          <span class="fname">${esc(n)}</span>
+          <div class="factions">
+            <button class="btn-mini neutral" data-action="cancel" data-name="${esc(n)}">Cancel</button>
+          </div>
+        </div>
+      `).join('');
+    }
+    if (friends.length > 0) {
+      html += '<div class="friend-section-label">Friends</div>';
+      html += friends.map(n => `
+        <div class="friend-row">
+          <span class="fname">${esc(n)}</span>
+          <div class="factions">
+            <button class="btn-mini call" data-action="call" data-name="${esc(n)}">Call</button>
+            <button class="btn-mini neutral" data-action="remove" data-name="${esc(n)}">Remove</button>
+          </div>
+        </div>
+      `).join('');
+    }
+    holder.innerHTML = html;
+    holder.querySelectorAll('button[data-action]').forEach(btn => {
+      const action = btn.getAttribute('data-action');
+      const targetName = btn.getAttribute('data-name');
+      btn.onclick = () => {
+        if (action === 'accept') socket.emit('accept-friend-request', { name: targetName });
+        else if (action === 'decline') socket.emit('decline-friend-request', { name: targetName });
+        else if (action === 'cancel') socket.emit('cancel-friend-request', { name: targetName });
+        else if (action === 'remove') socket.emit('remove-friend', { name: targetName });
+        else if (action === 'call') startCall(targetName);
+      };
+    });
+  }
+
+  function refreshMyRooms() { socket.emit('list-my-rooms'); }
+  function refreshPublicRooms() { socket.emit('list-public-rooms'); }
+  function refreshNotifications() { socket.emit('get-notifications'); }
+
+  function renderMyRooms(rooms) {
+    const holder = document.getElementById('my-rooms-holder');
+    if (!holder) return;
+    if (rooms.length === 0) {
+      holder.innerHTML = '<p class="sub" style="margin:0;">You\'re not in any rooms yet — create one below.</p>';
+      return;
+    }
+    holder.innerHTML = rooms.map(r => `
+      <div class="friend-row">
+        <span class="fname">
+          ${esc(r.name)}
+          ${r.unread > 0 ? `<span class="admin-badge" style="background:var(--peach-text);">${r.unread} new</span>` : ''}
+          <span style="color:var(--ink-dim); font-weight:400; font-size:11.5px;">${r.public ? ' · public' : ' · private'}${r.ownerName === name ? ' · yours' : ''}</span>
+        </span>
+        <div class="factions">
+          ${r.ownerName === name ? `<button class="btn-mini neutral" data-action="manage" data-id="${esc(r.id)}">Manage</button>` : ''}
+          <button class="btn-mini accept" data-action="open" data-id="${esc(r.id)}">Open</button>
+        </div>
+      </div>
+    `).join('');
+    holder.querySelectorAll('button[data-action]').forEach(btn => {
+      const action = btn.getAttribute('data-action');
+      const roomId = btn.getAttribute('data-id');
+      btn.onclick = () => {
+        if (action === 'open') socket.emit('enter-room', { roomId });
+        else if (action === 'manage') manageRoom(roomId, rooms.find(r => r.id === roomId));
+      };
+    });
+  }
+
+  function manageRoom(roomId, room) {
+    const choice = prompt(
+      `Manage "${room.name}"\n\nMembers: ${room.members.join(', ')}\n\nType a name to add, "-name" to remove someone, or "delete" to permanently delete this room:`
+    );
+    if (!choice) return;
+    const trimmed = choice.trim();
+    if (trimmed.toLowerCase() === 'delete') {
+      if (confirm(`Permanently delete "${room.name}"? This can't be undone.`)) {
+        socket.emit('delete-room', { roomId });
+      }
+      return;
+    }
+    const isRemove = trimmed.startsWith('-');
+    const targetName = isRemove ? trimmed.slice(1).trim() : trimmed;
+    if (!targetName) return;
+
+    function cleanup() {
+      socket.off('room-updated', onSuccess);
+      socket.off('room-error', onError);
+    }
+    function onSuccess() {
+      cleanup();
+      alert(isRemove ? `${targetName} removed from "${room.name}".` : `${targetName} added to "${room.name}".`);
+    }
+    function onError(msg) {
+      cleanup();
+      alert(`Couldn't do that: ${msg}`);
+    }
+    socket.once('room-updated', onSuccess);
+    socket.once('room-error', onError);
+    socket.emit(isRemove ? 'remove-room-member' : 'add-room-member', { roomId, name: targetName });
+  }
+
+  function renderPublicRooms(rooms) {
+    const holder = document.getElementById('public-rooms-holder');
+    if (!holder) return;
+    if (rooms.length === 0) {
+      holder.innerHTML = '<p class="sub" style="margin:0;">No public rooms to join right now.</p>';
+      return;
+    }
+    holder.innerHTML = rooms.map(r => `
+      <div class="friend-row">
+        <span class="fname">${esc(r.name)} <span style="color:var(--ink-dim); font-weight:400; font-size:11.5px;">by ${esc(r.ownerName)}</span></span>
+        <div class="factions">
+          <button class="btn-mini accept" data-id="${esc(r.id)}">Join</button>
+        </div>
+      </div>
+    `).join('');
+    holder.querySelectorAll('button[data-id]').forEach(btn => {
+      btn.onclick = () => socket.emit('join-public-room', { roomId: btn.getAttribute('data-id') });
+    });
+  }
+
+  function renderNotifications(items) {
+    const holder = document.getElementById('notif-holder');
+    if (!holder) return;
+    if (!items || items.length === 0) {
+      holder.innerHTML = '<p class="sub" style="margin:0;">Nothing new yet.</p>';
+      return;
+    }
+    holder.innerHTML = items.map(item => `
+      <div class="friend-row">
+        <span class="fname">${item.count} new message${item.count === 1 ? '' : 's'} in ${esc(item.name)}</span>
+        <div class="factions">
+          <button class="btn-mini accept" data-room-id="${esc(item.roomId)}">Go</button>
+        </div>
+      </div>
+    `).join('');
+    holder.querySelectorAll('button[data-room-id]').forEach(btn => {
+      btn.onclick = () => socket.emit('enter-room', { roomId: btn.getAttribute('data-room-id') });
+    });
+  }
+
+  function renderTyping(names) {
+    const el = document.getElementById('typing-indicator');
+    if (!el) return;
+    if (names.length === 0) {
+      el.classList.remove('show');
+      return;
+    }
+    const label = names.length === 1
+      ? esc(names[0]) + ' is typing'
+      : names.map(esc).join(', ') + ' are typing';
+    el.innerHTML = `${label}<span class="typing-dots"><span></span><span></span><span></span></span>`;
+    el.classList.add('show');
+  }
+
+  function currentTypers() {
+    return Array.from(typingTimeouts.keys());
+  }
+
+  function renderMessages() {
+    const log = document.getElementById('log');
+    if (!log) return;
+    const wasNearBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 60;
+    if (messages.length === 0) {
+      log.innerHTML = '<div class="empty">No messages yet.<br/>Say hi whenever you are ready.</div>';
+      return;
+    }
+    log.innerHTML = messages.map(m => {
+      if (m.announcement) {
+        const time = new Date(m.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        return `
+          <div class="announcement">
+            <div class="banner-label">Announcement</div>
+            <div class="banner">${esc(m.text)}</div>
+            <div class="time">${time}</div>
+          </div>
+        `;
+      }
+      const mine = m.name === name;
+      const time = new Date(m.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      let attachHtml = '';
+      if (m.attachment) {
+        const kind = fileKind(m.attachment.mime, m.attachment.filename);
+        if (kind === 'image') {
+          attachHtml = `<img class="attach-img" src="${m.attachment.dataUrl}" alt="${esc(m.attachment.filename)}" />`;
+        } else if (kind === 'video') {
+          attachHtml = `<video class="attach-video" src="${m.attachment.dataUrl}" controls></video>`;
+        } else if (kind === 'audio') {
+          attachHtml = `<audio class="attach-audio" src="${m.attachment.dataUrl}" controls></audio>`;
+        } else {
+          attachHtml = `<a class="file-link" href="${m.attachment.dataUrl}" download="${esc(m.attachment.filename)}"><span class="file-icon k-${kind}">${FILE_LABELS[kind]}</span><span>${esc(m.attachment.filename)}</span></a>`;
+        }
+      }
+      return `
+        <div class="msg ${mine ? 'mine' : 'theirs'}">
+          <div class="sender">${mine ? 'You' : esc(m.name)}${m.admin ? ' <span class="admin-badge">staff</span>' : ''}</div>
+          <div class="bubble">${attachHtml}${m.text ? esc(m.text) : ''}</div>
+          <div class="meta-row">
+            <div class="time">${time}</div>
+            ${mine ? `<button class="delete-btn" data-id="${esc(m.id)}" type="button">Delete</button>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+    if (wasNearBottom) log.scrollTop = log.scrollHeight;
+    log.querySelectorAll('.delete-btn').forEach(btn => {
+      btn.onclick = () => socket.emit('delete', { id: btn.getAttribute('data-id') });
+    });
+  }
+
+  function renderCustomRoomMessages() {
+    const log = document.getElementById('log');
+    if (!log || !currentCustomRoom) return;
+    const wasNearBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 60;
+    if (customRoomMessages.length === 0) {
+      log.innerHTML = '<div class="empty">No messages yet.<br/>Say hi whenever you are ready.</div>';
+      return;
+    }
+    log.innerHTML = customRoomMessages.map(m => {
+      const mine = m.name === name;
+      const time = new Date(m.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      let attachHtml = '';
+      if (m.attachment) {
+        const kind = fileKind(m.attachment.mime, m.attachment.filename);
+        if (kind === 'image') {
+          attachHtml = `<img class="attach-img" src="${m.attachment.dataUrl}" alt="${esc(m.attachment.filename)}" />`;
+        } else if (kind === 'video') {
+          attachHtml = `<video class="attach-video" src="${m.attachment.dataUrl}" controls></video>`;
+        } else if (kind === 'audio') {
+          attachHtml = `<audio class="attach-audio" src="${m.attachment.dataUrl}" controls></audio>`;
+        } else {
+          attachHtml = `<a class="file-link" href="${m.attachment.dataUrl}" download="${esc(m.attachment.filename)}"><span class="file-icon k-${kind}">${FILE_LABELS[kind]}</span><span>${esc(m.attachment.filename)}</span></a>`;
+        }
+      }
+      return `
+        <div class="msg ${mine ? 'mine' : 'theirs'}">
+          <div class="sender">${mine ? 'You' : esc(m.name)}</div>
+          <div class="bubble">${attachHtml}${m.text ? esc(m.text) : ''}</div>
+          <div class="meta-row">
+            <div class="time">${time}</div>
+            ${mine ? `<button class="delete-btn" data-id="${esc(m.id)}" type="button">Delete</button>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+    if (wasNearBottom) log.scrollTop = log.scrollHeight;
+    log.querySelectorAll('.delete-btn').forEach(btn => {
+      btn.onclick = () => socket.emit('room-delete-message', { roomId: currentCustomRoom.id, id: btn.getAttribute('data-id') });
+    });
+  }
+
+  socket.on('recovery-error', msg => {
+    renderPasswordRecovery(msg);
+  });
+
+  socket.on('password-changed', () => {
+    const el = document.getElementById('change-pass-status');
+    if (el) { el.textContent = 'Password updated.'; el.className = 'status ok'; }
+    const input = document.getElementById('new-pass-in');
+    if (input) input.value = '';
+  });
+  socket.on('password-change-error', msg => {
+    const el = document.getElementById('change-pass-status');
+    if (el) { el.textContent = msg; el.className = 'status err'; }
+  });
+
+  socket.on('login-success', data => {
+    name = data.name;
+    messages = data.history || [];
+    applyAvatar(data.avatar);
+    renderDashboard();
+  });
+  socket.on('login-error', msg => renderGate(msg));
+  socket.on('profile-updated', ({ avatar: newAvatar }) => {
+    if (newAvatar !== undefined) {
+      applyAvatar(newAvatar);
+      const topbarAvatar = document.querySelector('.topbar .avatar');
+      if (topbarAvatar) topbarAvatar.innerHTML = avatarInnerHTML();
+      const profileAvatar = document.querySelector('.profile-row .avatar-md');
+      if (profileAvatar) profileAvatar.innerHTML = avatarInnerHTML();
+      const el = document.getElementById('avatar-status');
+      if (el) { el.textContent = 'Saved.'; el.className = 'status ok'; }
+    }
+  });
+  socket.on('profile-error', ({ field, message }) => {
+    const el = document.getElementById('avatar-status');
+    if (el) { el.textContent = message; el.className = 'status err'; }
+  });
+
+  socket.on('suggestion-submitted', () => {
+    const el = document.getElementById('suggestion-status');
+    if (el) { el.textContent = 'Sent — thanks!'; el.className = 'status ok'; }
+  });
+  socket.on('suggestion-error', msg => {
+    const el = document.getElementById('suggestion-status');
+    if (el) { el.textContent = msg; el.className = 'status err'; }
+  });
+
+  socket.on('friend-data', data => {
+    friendData = { friends: data.friends || [], incoming: data.incoming || [], outgoing: data.outgoing || [] };
+    const nameIn = document.getElementById('friend-name-in');
+    if (nameIn) nameIn.value = '';
+    const status = document.getElementById('friend-status');
+    if (status) { status.textContent = ''; status.className = 'status'; }
+    renderFriendsList();
+    renderCallPicker();
+  });
+  socket.on('friend-error', msg => {
+    const el = document.getElementById('friend-status');
+    if (el) { el.textContent = msg; el.className = 'status err'; }
+  });
+  socket.on('friend-request-received', ({ from }) => {
+    const el = document.getElementById('friend-status');
+    if (el) { el.textContent = `${from} sent you a friend request.`; el.className = 'status ok'; }
+  });
+  socket.on('friend-accepted', ({ name: otherName }) => {
+    const el = document.getElementById('friend-status');
+    if (el) { el.textContent = `You and ${otherName} are now friends.`; el.className = 'status ok'; }
+  });
+
+  socket.on('account-deleted', () => {
+    messages = [];
+    name = '';
+    currentCustomRoom = null;
+    customRoomMessages = [];
+    applyAvatar(DEFAULT_AVATAR);
+    renderGate('This account no longer exists.');
+  });
+
+  socket.on('message', payload => {
+    messages.push(payload);
+    renderMessages();
+    if (payload.name !== name) playBing();
+  });
+
+  socket.on('deleted', ({ id }) => {
+    messages = messages.filter(m => m.id !== id);
+    renderMessages();
+  });
+
+  socket.on('typing', ({ name: who }) => {
+    if (who === name) return;
+    if (typingTimeouts.has(who)) clearTimeout(typingTimeouts.get(who));
+    const t = setTimeout(() => {
+      typingTimeouts.delete(who);
+      renderTyping(currentTypers());
+    }, 3000);
+    typingTimeouts.set(who, t);
+    renderTyping(currentTypers());
+  });
+
+  socket.on('stop-typing', ({ name: who }) => {
+    if (typingTimeouts.has(who)) {
+      clearTimeout(typingTimeouts.get(who));
+      typingTimeouts.delete(who);
+    }
+    renderTyping(currentTypers());
+  });
+
+  // ---- Custom rooms ----
+
+  socket.on('room-entered', ({ room, messages: roomMsgs }) => {
+    customRoomMessages = roomMsgs || [];
+    renderCustomRoom(room);
+  });
+
+  socket.on('room-message', ({ roomId, message }) => {
+    if (!currentCustomRoom || currentCustomRoom.id !== roomId) return;
+    customRoomMessages.push(message);
+    renderCustomRoomMessages();
+    if (message.name !== name) playBing();
+  });
+
+  socket.on('room-message-deleted', ({ roomId, id }) => {
+    if (!currentCustomRoom || currentCustomRoom.id !== roomId) return;
+    customRoomMessages = customRoomMessages.filter(m => m.id !== id);
+    renderCustomRoomMessages();
+  });
+
+  socket.on('room-typing', ({ roomId, name: who }) => {
+    if (!currentCustomRoom || currentCustomRoom.id !== roomId || who === name) return;
+    if (typingTimeouts.has(who)) clearTimeout(typingTimeouts.get(who));
+    const t = setTimeout(() => {
+      typingTimeouts.delete(who);
+      renderTyping(currentTypers());
+    }, 3000);
+    typingTimeouts.set(who, t);
+    renderTyping(currentTypers());
+  });
+
+  socket.on('room-stop-typing', ({ roomId, name: who }) => {
+    if (!currentCustomRoom || currentCustomRoom.id !== roomId) return;
+    if (typingTimeouts.has(who)) {
+      clearTimeout(typingTimeouts.get(who));
+      typingTimeouts.delete(who);
+    }
+    renderTyping(currentTypers());
+  });
+
+  socket.on('room-removed', ({ roomId }) => {
+    if (currentCustomRoom && currentCustomRoom.id === roomId) {
+      currentCustomRoom = null;
+      customRoomMessages = [];
+      renderDashboard();
+    }
+    if (document.getElementById('my-rooms-holder')) refreshMyRooms();
+  });
+
+  socket.on('room-error', msg => {
+    const el = document.getElementById('room-status');
+    if (el) { el.textContent = msg; el.className = 'status err'; }
+    else alert(msg);
+  });
+
+  socket.on('room-created', ({ room }) => {
+    const el = document.getElementById('room-status');
+    if (el) { el.textContent = `"${room.name}" created.`; el.className = 'status ok'; }
+    if (document.getElementById('my-rooms-holder')) refreshMyRooms();
+    if (document.getElementById('room-name-in')) document.getElementById('room-name-in').value = '';
+  });
+
+  socket.on('room-joined', () => {
+    if (document.getElementById('my-rooms-holder')) refreshMyRooms();
+    if (document.getElementById('public-rooms-holder')) refreshPublicRooms();
+  });
+
+  socket.on('my-rooms', ({ rooms: myRooms }) => {
+    renderMyRooms(myRooms || []);
+  });
+
+  socket.on('public-rooms', ({ rooms: browsableRooms }) => {
+    renderPublicRooms(browsableRooms || []);
+  });
+
+  socket.on('room-updated', () => {
+    if (document.getElementById('my-rooms-holder')) refreshMyRooms();
+  });
+
+  socket.on('added-to-room', ({ room }) => {
+    if (document.getElementById('my-rooms-holder')) refreshMyRooms();
+    if (document.getElementById('notif-holder')) refreshNotifications();
+    else showBanner(`${room.name}: you were added to this room.`);
+  });
+
+  socket.on('public-room-added', () => {
+    if (document.getElementById('public-rooms-holder')) refreshPublicRooms();
+  });
+
+  socket.on('unread-bump', () => {
+    if (document.getElementById('notif-holder')) refreshNotifications();
+    if (document.getElementById('my-rooms-holder')) refreshMyRooms();
+    playBing();
+  });
+
+  socket.on('notifications', ({ items }) => {
+    renderNotifications(items || []);
+  });
+
+  function showBanner(text) {
+    // Lightweight fallback notice when no dashboard element is on screen to update directly.
+    console.log('[notice]', text);
+  }
+
+  renderGate();
+})();
+</script>
+</body>
+</html>
