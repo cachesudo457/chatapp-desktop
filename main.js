@@ -1,7 +1,7 @@
 const { app, BrowserWindow, Menu, shell } = require('electron');
 const path = require('path');
 
-const CHAT_URL = 'https://chat-thing-ufly.onrender.com/';
+const CHAT_URL = 'https://chat-thing-8u0f.onrender.com/';
 
 function createWindow() {
   const win = new BrowserWindow({
